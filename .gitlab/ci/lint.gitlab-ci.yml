@@ -1,0 +1,21 @@
+lint:
+  stage: lint
+  image: python:3.10-alpine
+  tags:
+    - kucera-cloud
+  except:
+    refs:
+      - schedules
+  only:
+    changes:
+      - registry-office/**/*
+      - requirements/**/*
+      - .gitlab-ci.yml
+      - .gitlab/**/*
+  before_script:
+    - python -m venv .venv
+    - source .venv/bin/activate
+  script:
+    - pip install flake8
+    - flake8 main/
+

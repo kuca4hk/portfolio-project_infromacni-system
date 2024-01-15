@@ -1,0 +1,79 @@
+#variables:
+#  DOCKER_DRIVER: overlay2
+#  DOCKER_BUILDKIT: 1
+#
+#.docker_build:
+#  stage: build
+#  image: docker:20.10
+#  tags:
+#    - {{ gitlab_runner_tag }}
+#  services:
+#    - name: docker:20.10-dind
+#      alias: docker-dind
+#  before_script:
+#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#    - docker pull $CI_REGISTRY_IMAGE/$IMAGE_NAME:latest || true
+#
+#.docker_publish: &docker_publish
+#  - docker push --all-tags $CI_REGISTRY_IMAGE/$IMAGE_NAME-build
+#  - docker push --all-tags $CI_REGISTRY_IMAGE/$IMAGE_NAME
+#
+#.build: &build
+#  - docker pull $CI_REGISTRY_IMAGE/$IMAGE_NAME:latest || true
+#  - docker pull $CI_REGISTRY_IMAGE/$IMAGE_NAME-build:latest || true
+#  - >
+#    docker build
+#    --target build
+#    --tag $CI_REGISTRY_IMAGE/$IMAGE_NAME-build:latest
+#    --tag $CI_REGISTRY_IMAGE/$IMAGE_NAME-build:$CI_COMMIT_SHA
+#    --cache-from $CI_REGISTRY_IMAGE/$IMAGE_NAME-build:latest
+#    --build-arg BUILDKIT_INLINE_CACHE=1
+#    .
+#  - >
+#    docker build
+#    --target final
+#    --tag $CI_REGISTRY_IMAGE/$IMAGE_NAME:$CI_COMMIT_SHA
+#    --tag $CI_REGISTRY_IMAGE/$IMAGE_NAME:latest
+#    --cache-from $CI_REGISTRY_IMAGE/$IMAGE_NAME:latest
+#    --cache-from $CI_REGISTRY_IMAGE/$IMAGE_NAME-build:latest
+#    --build-arg BUILDKIT_INLINE_CACHE=1
+#    .
+#
+#build_app:
+#  extends: .docker_build
+#  variables:
+#    IMAGE_NAME: app
+#  script:
+#    - *build
+#  except:
+#    refs:
+#      - master
+#      - develop
+#      - schedules
+#  only:
+#    changes:
+#      - registry-office/**/*
+#      - requirements.txt
+#      - scripts/**/*
+#      - .gitlab-ci.yml
+#      - .gitlab/**/*
+#
+#publish_app:
+#  extends: .docker_build
+#  variables:
+#    IMAGE_NAME: app
+#  script:
+#    - *build
+#    - *docker_publish
+#  except:
+#    refs:
+#      - schedules
+#  only:
+#    refs:
+#      - master
+#    changes:
+#      - registry-office/**/*
+#      - requirements.txt
+#      - scripts/**/*
+#      - .gitlab-ci.yml
+#      - .gitlab/**/*

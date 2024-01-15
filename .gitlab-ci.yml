@@ -1,0 +1,7 @@
+stages:
+  - lint
+#  - build
+#  - deploy
+
+include:
+  local: ".gitlab/ci/lint.gitlab-ci.yml"

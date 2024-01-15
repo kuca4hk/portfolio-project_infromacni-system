@@ -1,0 +1,52 @@
+#stages:
+#  - deploy
+#
+#.deploy:
+#  stage: deploy
+#  tags:
+#    - {{ gitlab_runner_tag }}
+#  image:
+#    name: {{ gitlab_runner_image }}
+#    entrypoint: [""]
+#
+#  before_script:
+#    - eval $(ssh-agent -s)
+#    - echo "$DEPLOY_SSH" | tr -d '\r' | ssh-add -
+#    - git config --global user.email "jakub.kucera.01@gmail.com"
+#    - git config --global user.name "jakub"
+#    - kubectl config get-contexts
+#    - kubectl config use-context {{gitlab_groups}}/{{project}}:{{agents_folder}}
+#    - kubectl get pods -n gitlab-agent-demo-agents {{name_kubernetes_pods_agents}}
+#
+#    #    # clone template
+#    - git clone {{ gitlab_project_ssj }}
+#
+#
+#  script:
+#    - kubectl apply -f $CI_PROJECT_DIR/kubernetes/DB/pres-volume.yaml --validate=false
+#    - kubectl apply -f $CI_PROJECT_DIR/kubernetes/DB/pres-volume-claim.yaml --validate=false
+#    - kubectl apply -f $CI_PROJECT_DIR/kubernetes/DB/postgres-deployment.yml --validate=false
+#    - kubectl apply -f $CI_PROJECT_DIR/kubernetes/WEB/Deployment.yaml --validate=false
+#
+#    # wait for deployment
+#    - export status=`kubectl rollout status -n {{namespace}} --timeout=5s deployment {{namespace}}`
+#    - echo $status
+#    # restart deployment
+#    - if [ "$status" = "deployment \"{{namespace}}\" successfully rolled out" ] ; then kubectl rollout restart -n {{namespace}} deployment {{namespace}}; fi
+#
+#deploy_prod:
+#  extends: .deploy
+#  only:
+#    refs:
+#      - master
+#    changes:
+#      - registry-office/**/*
+#      - requirements/**/*
+#      - deployment/**/*
+#      - scripts/**/*
+#      - .gitlab-ci.yml
+#      - .gitlab/**/*
+#      - kubernetes/**/*
+#  environment:
+#    name: production
+#    url: {{ url_production }}

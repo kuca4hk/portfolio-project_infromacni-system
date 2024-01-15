@@ -1,0 +1,129 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: parami-group
+  namespace: parami-group
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - "{{url}}"
+    secretName: {{secret_name_certficicated}}
+  rules:
+    - host: {{url}}
+      http:
+        paths:
+        - pathType: Prefix
+          path: "/"
+          backend:
+            service:
+              name: {{namespace}}
+              port:
+                number: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{name}}
+  namespace: {{namespace}}
+  labels:
+    project: {{name}}
+    app: {{name}}
+spec:
+  selector:
+    matchLabels:
+      project: {{name}}
+      app: {{name}}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        project: {{name}}
+        app: {{name}}
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+        - name: {{name}}
+          image: {{gitlab_image}}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+          envFrom:
+            - secretRef:
+                name: {{namespace_secrets}}
+          env:
+            - name: PROJECT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: PROJECT_SECRET_KEY
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: EMAIL_HOST_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: EMAIL_HOST_USER
+            - name: EMAIL_HOST_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: EMAIL_HOST_PASSWORD
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                  secretKeyRef:
+                    name: {{namespace_secrets}}
+                    key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{namespace_secrets}}
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                  secretKeyRef:
+                    name: {{namespace_secrets}}
+                    key: DB_PASSWORD
+            - name: DB_PORT
+              valueFrom:
+                  secretKeyRef:
+                    name: parami-group-secrets
+                    key: DB_PORT
+            - name: DJANGO_SETTINGS_MODULE
+              value: "main.settings.production"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{name}}
+  namespace: {{namespace}}
+  labels:
+    app: {{name}}
+    project: {{name}}
+spec:
+  selector:
+    app: {{name}}
+  ports:
+    - port: 8000
+      targetPort: 8000
